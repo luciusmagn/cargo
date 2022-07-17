@@ -217,36 +217,6 @@ fn registry_and_path_dep_works() {
 }
 
 #[cargo_test]
-fn registry_incompatible_with_git() {
-    registry::alt_init();
-
-    let p = project()
-        .file(
-            "Cargo.toml",
-            r#"
-                [project]
-                name = "foo"
-                version = "0.0.1"
-                authors = []
-
-                [dependencies.bar]
-                git = ""
-                registry = "alternative"
-            "#,
-        )
-        .file("src/main.rs", "fn main() {}")
-        .build();
-
-    p.cargo("build")
-        .with_status(101)
-        .with_stderr_contains(
-            "  dependency (bar) specification is ambiguous. \
-             Only one of `git` or `registry` is allowed.",
-        )
-        .run();
-}
-
-#[cargo_test]
 fn cannot_publish_to_crates_io_with_registry_dependency() {
     registry::alt_init();
     let fakeio_path = paths::root().join("fake.io");

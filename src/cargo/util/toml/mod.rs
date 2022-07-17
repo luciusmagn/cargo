@@ -2621,17 +2621,12 @@ impl<P: ResolveToPath + Clone> DetailedTomlDependency<P> {
             self.registry.as_ref(),
             self.registry_index.as_ref(),
         ) {
-            (Some(_), _, Some(_), _) | (Some(_), _, _, Some(_)) => bail!(
-                "dependency ({}) specification is ambiguous. \
-                 Only one of `git` or `registry` is allowed.",
-                name_in_toml
-            ),
             (_, _, Some(_), Some(_)) => bail!(
                 "dependency ({}) specification is ambiguous. \
                  Only one of `registry` or `registry-index` is allowed.",
                 name_in_toml
             ),
-            (Some(git), maybe_path, _, _) => {
+            (Some(git), maybe_path, maybe_reg, _) => {
                 if maybe_path.is_some() {
                     bail!(
                         "dependency ({}) specification is ambiguous. \
@@ -2672,7 +2667,12 @@ impl<P: ResolveToPath + Clone> DetailedTomlDependency<P> {
                     cx.warnings.push(msg)
                 }
 
-                SourceId::for_git(&loc, reference)?
+                match maybe_reg {
+                    Some(registry) if cx.source_id.is_remote_registry() => {
+                        SourceId::alt_registry(cx.config, registry)?
+                    }
+                    _ => SourceId::for_git(&loc, reference)?,
+                }
             }
             (None, Some(path), _, _) => {
                 let path = path.resolve(cx.config);
